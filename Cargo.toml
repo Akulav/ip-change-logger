@@ -1,0 +1,58 @@
+[package]
+name = "iptrail"
+version = "3.0.0"
+edition = "2021"
+rust-version = "1.95"
+description = "Watch your public IP address, log every change, and see who the internet thinks you are. No API keys."
+authors = ["Akulav"]
+license-file = "LICENSE"
+repository = "https://github.com/Akulav/ip-change-logger"
+homepage = "https://github.com/Akulav/ip-change-logger"
+readme = "README.md"
+keywords = ["ip", "vpn", "proxy", "monitor", "network"]
+categories = ["network-programming", "gui"]
+publish = false
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+directories = "6"
+eframe = "0.37"
+image = { version = "0.25", default-features = false, features = ["png"] }
+notify-rust = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "3", features = ["json"] }
+
+[target.'cfg(windows)'.dependencies]
+tray-icon = "0.26"
+windows-sys = { version = "0.61", features = ["Win32_System_Console"] }
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+[dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png", "ico"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+[package.metadata.deb]
+name = "iptrail"
+maintainer = "Akulav"
+section = "net"
+priority = "optional"
+extended-description = """\
+IPTrail watches your public IP address, logs every change with a timestamp, \
+and shows location, network and anonymity/threat signals for each address \
+using free, key-less data sources."""
+assets = [
+    ["target/release/iptrail", "usr/bin/", "755"],
+    ["packaging/linux/iptrail.desktop", "usr/share/applications/", "644"],
+    ["assets/icon-256.png", "usr/share/icons/hicolor/256x256/apps/iptrail.png", "644"],
+    ["README.md", "usr/share/doc/iptrail/README.md", "644"],
+    ["LICENSE", "usr/share/doc/iptrail/LICENSE", "644"],
+]

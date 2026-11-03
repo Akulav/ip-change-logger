@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=IPTrail
+GenericName=Public IP Monitor
+Comment=Watch your public IP address and log every change
+Exec=iptrail
+Icon=iptrail
+Terminal=false
+Categories=Network;Monitor;Utility;
+Keywords=ip;vpn;proxy;network;monitor;tor;
+StartupWMClass=iptrail
