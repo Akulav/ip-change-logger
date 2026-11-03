@@ -108,6 +108,8 @@ impl App {
         self.toast = Some((text.into(), Instant::now()));
     }
 
+    /// Brings the window back from the tray (the tray only exists on Windows).
+    #[cfg(windows)]
     fn show_window(ctx: &egui::Context) {
         ctx.send_viewport_cmd(ViewportCommand::Visible(true));
         ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
