@@ -1,6 +1,5 @@
 //! User settings and on-disk locations.
 
-use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -83,19 +82,10 @@ pub struct Paths {
 }
 
 impl Paths {
+    /// Everything lives in the folder IPTrail is installed in (next to the program when not
+    /// installed); never in the OS's config / data / cache folders. See `crate::install`.
     pub fn discover() -> Self {
-        match ProjectDirs::from("io.github", "Akulav", "IPTrail") {
-            Some(dirs) => Self::new(dirs.config_dir(), dirs.data_dir(), dirs.cache_dir()),
-            // No home directory (rare, e.g. some service accounts): keep everything next to the binary.
-            None => {
-                let base = std::env::current_exe()
-                    .ok()
-                    .and_then(|p| p.parent().map(Path::to_path_buf))
-                    .unwrap_or_else(|| PathBuf::from("."))
-                    .join("iptrail-data");
-                Self::new(&base, &base, &base.join("cache"))
-            }
-        }
+        Self::in_dir(&crate::install::data_root())
     }
 
     /// Keeps every file inside one directory (used by `--demo`).

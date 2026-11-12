@@ -7,6 +7,7 @@ mod widgets;
 
 use crate::config::{Paths, Settings, MAX_INTERVAL_SECS, MIN_INTERVAL_SECS};
 use crate::history::Entry;
+use crate::install::gui::{InstallPrompt, PromptResult, Updater};
 use crate::monitor::{Command, Event, Monitor, State};
 use crate::net::intel::{IpIntel, Risk};
 use chrono::{DateTime, Local};
@@ -21,7 +22,7 @@ use widgets::{
 pub const APP_NAME: &str = "IPTrail";
 const REPO_URL: &str = "https://github.com/Akulav/ip-change-logger";
 
-pub fn run(paths: Paths, settings: Settings) -> eframe::Result {
+pub fn run(paths: Paths, settings: Settings, startup: crate::install::StartupInfo) -> eframe::Result {
     let icon =
         eframe::icon_data::from_png_bytes(include_bytes!("../../assets/icon-256.png")).unwrap_or_default();
     let options = eframe::NativeOptions {
@@ -33,10 +34,13 @@ pub fn run(paths: Paths, settings: Settings) -> eframe::Result {
             .with_icon(icon),
         ..Default::default()
     };
-    eframe::run_native(APP_NAME, options, Box::new(|cc| Ok(Box::new(App::new(cc, paths, settings)))))
+    eframe::run_native(APP_NAME, options, Box::new(|cc| Ok(Box::new(App::new(cc, paths, settings, startup)))))
 }
 
 struct App {
+    /// Linux/macOS, started outside the install folder: install / update / just run it.
+    install_prompt: Option<InstallPrompt>,
+    updater: Updater,
     monitor: Monitor,
     paths: Paths,
     settings: Settings,
@@ -52,12 +56,22 @@ struct App {
 }
 
 impl App {
-    fn new(cc: &eframe::CreationContext<'_>, paths: Paths, settings: Settings) -> Self {
+    fn new(
+        cc: &eframe::CreationContext<'_>,
+        paths: Paths,
+        settings: Settings,
+        startup: crate::install::StartupInfo,
+    ) -> Self {
         theme::apply(&cc.egui_ctx);
         let logo = load_logo(&cc.egui_ctx);
+        let install_prompt = InstallPrompt::new(startup.offer.clone());
 
+        // While the install prompt is up nothing is checked or written: if the user installs, the
+        // installed copy starts with its own folder.
+        let mut first = settings.clone();
+        first.auto_start &= install_prompt.is_none();
         let ctx = cc.egui_ctx.clone();
-        let monitor = Monitor::spawn(paths.clone(), settings.clone(), move |event| {
+        let monitor = Monitor::spawn(paths.clone(), first, move |event| {
             if let Event::Error(e) = &event {
                 eprintln!("iptrail: {e}");
             }
@@ -73,7 +87,17 @@ impl App {
             }
         };
 
+        let toast = if let Some(from) = &startup.updated_from {
+            Some((format!("Updated to {} from {from}", env!("CARGO_PKG_VERSION")), Instant::now()))
+        } else if startup.installed {
+            Some((format!("{APP_NAME} is installed"), Instant::now()))
+        } else {
+            None
+        };
+
         Self {
+            install_prompt,
+            updater: Updater::new(),
             log_path_edit: settings.log_path.as_ref().map(|p| p.display().to_string()).unwrap_or_default(),
             monitor,
             paths,
@@ -81,7 +105,7 @@ impl App {
             logo,
             settings_open: false,
             confirm_clear: false,
-            toast: None,
+            toast,
             #[cfg(windows)]
             tray,
             quitting: false,
@@ -130,6 +154,7 @@ fn load_logo(ctx: &egui::Context) -> Option<egui::TextureHandle> {
 
 impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.updater.tick(ctx);
         #[cfg(windows)]
         if let Some(tray) = &mut self.tray {
             while let Some(msg) = tray.poll() {
@@ -177,6 +202,27 @@ impl eframe::App for App {
         let ctx = ui.ctx().clone();
         // Countdown and relative times tick once per second.
         ctx.request_repaint_after(Duration::from_secs(1));
+
+        if let Some(prompt) = &mut self.install_prompt {
+            let mut result = PromptResult::Open;
+            egui::CentralPanel::default()
+                .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin::same(24)))
+                .show(ui, |ui| result = prompt.ui(ui, "settings, IP history and the change log"));
+            match result {
+                PromptResult::Open => {}
+                PromptResult::Close => {
+                    self.quitting = true;
+                    ctx.send_viewport_cmd(ViewportCommand::Close);
+                }
+                PromptResult::JustRun => {
+                    self.install_prompt = None;
+                    if self.settings.auto_start {
+                        self.monitor.send(Command::Start);
+                    }
+                }
+            }
+            return;
+        }
 
         egui::Panel::top("top")
             .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin {
@@ -329,6 +375,7 @@ impl App {
                     RichText::new(format!("v{}", env!("CARGO_PKG_VERSION"))).size(12.0),
                     REPO_URL,
                 );
+                self.updater.ui(ui);
                 ui.label(
                     RichText::new("Data: ip-api.com · ipwho.is · Tor Project · blocklist.de · FireHOL")
                         .size(12.0)

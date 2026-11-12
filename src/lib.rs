@@ -6,6 +6,7 @@
 mod config;
 mod demo;
 mod history;
+mod install;
 mod monitor;
 mod net;
 mod notify;
@@ -30,6 +31,9 @@ OPTIONS:
     --no-feeds          Skip Tor and abuse blocklist checks for this run
     --paths             Print where settings, history and logs are stored
     --demo              Open the app with sample data (offline; for screenshots)
+    --here              Linux/macOS: run without offering to install
+    --portable          Keep data next to the program and never offer to install
+    --uninstall         Remove the installed app (Windows: starts the uninstaller)
     -V, --version       Print version
     -h, --help          Print this help
 ";
@@ -64,6 +68,11 @@ fn parse_args() -> Result<Option<Args>, String> {
             "--demo" => args.demo = true,
             "--no-intel" => args.no_intel = true,
             "--no-feeds" => args.no_feeds = true,
+            // handled by `install::on_startup`
+            "--updated-from" => {
+                it.next();
+            }
+            f if install::is_install_flag(f) => {}
             "--interval" => {
                 let v = it.next().ok_or("--interval needs a value in seconds")?;
                 let secs: u64 = v.parse().map_err(|_| format!("invalid interval {v:?}"))?;
@@ -97,15 +106,26 @@ pub fn run() -> ExitCode {
     };
 
     if args.demo {
-        return match demo::paths()
-            .and_then(|paths| ui::run(paths, demo::settings()).map_err(|e| e.to_string()))
-        {
+        return match demo::paths().and_then(|paths| {
+            ui::run(paths, demo::settings(), install::StartupInfo::default()).map_err(|e| e.to_string())
+        }) {
             Ok(()) => ExitCode::SUCCESS,
             Err(e) => {
                 eprintln!("error: {e}");
                 ExitCode::FAILURE
             }
         };
+    }
+
+    // Installing / updating / uninstalling, moving old data into the install folder.
+    let raw: Vec<String> = std::env::args().skip(1).collect();
+    let gui = !(args.once || args.headless || args.paths);
+    let startup = match install::on_startup(&raw, gui) {
+        install::Startup::Exit => return ExitCode::SUCCESS,
+        install::Startup::Run(info) => info,
+    };
+    for note in &startup.notes {
+        eprintln!("iptrail: {note}");
     }
 
     let paths = Paths::discover();
@@ -130,7 +150,7 @@ pub fn run() -> ExitCode {
         return headless(paths, settings);
     }
 
-    match ui::run(paths, settings) {
+    match ui::run(paths, settings, startup) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("error: {e}");

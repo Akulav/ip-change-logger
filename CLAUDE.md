@@ -59,14 +59,27 @@ the same on Windows and Linux.
   best-effort fallback for the GUI binary.
 - Tray is Windows-only by design (avoids GTK deps on Linux).
 
+## Install, update and data location (same model as Akulav/akulav-mc-launcher)
+
+- `src/install/` — `mod.rs` (install folder, marker `.iptrail-install`, data root, moving 3.0 data in,
+  Windows/Inno + Linux/macOS self-install, download/verify/apply), `update.rs` (GitHub releases +
+  `SHA256SUMS.txt`), `gui.rs` (install prompt, footer update button).
+- **Everything the app writes lives in the install folder** (`Paths::discover` → `install::data_root`):
+  settings, history, log, cache, downloaded update. Never the OS config/data/cache folders or the temp folder.
+- Windows: `installer/iptrail.iss` (asks for the folder once, `/UPDATE /DIR=` reuses it; installs
+  `IPTrail.exe` + `iptrail-cli.exe`). **Never change its AppId.** Linux/macOS: the binary offers to install
+  itself into a folder the user picks (remembered in `<config dir>/iptrail/install-dir`).
+- Linux/macOS-only code can't be compiled here (no cross C compiler for `ring`): review it by hand; CI checks it.
+
 ## Versioning & releases
 
 - Version lives only in `Cargo.toml`; follow SemVer and update `CHANGELOG.md`
   (Keep a Changelog format) in the same commit.
-- Pushing to `main` with a version that has no `vX.Y.Z` tag triggers
-  `.github/workflows/release.yml`, which builds Windows (zip + portable exe) and
-  Linux (tar.gz + .deb), then publishes a GitHub Release using the matching
-  CHANGELOG section. Don't create tags by hand unless they match `Cargo.toml`.
+- One workflow, `.github/workflows/build.yml`: lint + test + build on every push/PR; pushing to `main`
+  with a version that has no `vX.Y.Z` release publishes exactly three files — `IPTrail-setup.exe`,
+  `IPTrail-linux-x64`, `IPTrail-macos-arm64` — plus `SHA256SUMS.txt` (names are API: installed copies
+  look for them), with the matching CHANGELOG section as notes. Don't create tags by hand unless they
+  match `Cargo.toml`.
 - `Cargo.lock` is committed; CI uses `--locked`.
 
 ## License

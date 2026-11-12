@@ -32,10 +32,10 @@ Windows and Linux for every push and pull request.
 assets/            logo.svg (source artwork), generated icon PNGs and icon.ico
 docs/              this documentation and the README screenshot
 examples/gen_icon.rs  renders the PNG/ICO icons from code
-packaging/linux/   .desktop entry for the .deb and tarball
+installer/         iptrail.iss (Windows setup: install + update)
 src/               application code — see architecture.md
 build.rs           embeds icon + version info into the Windows .exe
-.github/workflows/ ci.yml and release.yml
+.github/workflows/ build.yml (checks, 3 release files, release)
 ```
 
 ## Icons
