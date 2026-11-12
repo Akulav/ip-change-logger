@@ -1,15 +1,15 @@
 //! Small reusable pieces of the IPTrail look.
 
-use super::theme::{self, BORDER, FAINT, MUTED, SURFACE, TEXT};
+use super::theme::{self, FAINT, GLASS, GLASS_BORDER, MUTED, TEXT};
 use eframe::egui::{
     self, Color32, CornerRadius, FontId, Frame, Margin, Response, RichText, Sense, Stroke, Ui,
 };
 
-/// Rounded surface used for every section.
+/// Glass card used for every section.
 pub fn card<R>(ui: &mut Ui, add: impl FnOnce(&mut Ui) -> R) -> R {
     Frame::new()
-        .fill(SURFACE)
-        .stroke(Stroke::new(1.0, BORDER))
+        .fill(GLASS)
+        .stroke(Stroke::new(1.0, GLASS_BORDER))
         .corner_radius(CornerRadius::same(theme::RADIUS))
         .inner_margin(Margin::same(18))
         .show(ui, |ui| {
@@ -24,9 +24,12 @@ pub fn caption(ui: &mut Ui, text: &str) {
     ui.label(RichText::new(text.to_uppercase()).size(11.0).color(FAINT).extra_letter_spacing(0.8));
 }
 
-pub fn section_title(ui: &mut Ui, icon: &str, text: &str) {
+/// Section heading with a short cyan accent bar (vector, not an emoji: egui draws emoji in color).
+pub fn section_title(ui: &mut Ui, text: &str) {
     ui.horizontal(|ui| {
-        ui.label(RichText::new(icon).size(15.0).color(theme::CYAN));
+        let (bar, _) = ui.allocate_exact_size(egui::vec2(4.0, 16.0), Sense::hover());
+        ui.painter().rect_filled(bar, CornerRadius::same(2), theme::CYAN);
+        ui.add_space(2.0);
         ui.label(RichText::new(text).font(FontId::new(15.5, theme::strong())).color(TEXT));
     });
 }
@@ -121,14 +124,17 @@ pub fn primary_button(ui: &mut Ui, text: &str, color: Color32) -> Response {
             .font(FontId::new(14.0, theme::strong())),
     )
     .fill(color)
-    .stroke(Stroke::NONE)
-    .corner_radius(CornerRadius::same(9));
+    .stroke(Stroke::new(1.0, theme::tint(Color32::WHITE, 0.35)))
+    .corner_radius(CornerRadius::same(theme::RADIUS_SM));
     ui.add(button)
 }
 
 /// Quiet button with an icon and label.
 pub fn ghost_button(ui: &mut Ui, text: &str) -> Response {
-    ui.add(egui::Button::new(RichText::new(text).color(TEXT)).corner_radius(CornerRadius::same(9)))
+    ui.add(
+        egui::Button::new(RichText::new(text).color(TEXT))
+            .corner_radius(CornerRadius::same(theme::RADIUS_SM)),
+    )
 }
 
 /// Label/value row used in the details grid.

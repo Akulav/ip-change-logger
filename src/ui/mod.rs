@@ -200,13 +200,14 @@ impl eframe::App for App {
 
     fn ui(&mut self, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        theme::paint_backdrop(ui.painter(), ui.max_rect());
         // Countdown and relative times tick once per second.
         ctx.request_repaint_after(Duration::from_secs(1));
 
         if let Some(prompt) = &mut self.install_prompt {
             let mut result = PromptResult::Open;
             egui::CentralPanel::default()
-                .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin::same(24)))
+                .frame(egui::Frame::new().inner_margin(egui::Margin::same(24)))
                 .show(ui, |ui| result = prompt.ui(ui, "settings, IP history and the change log"));
             match result {
                 PromptResult::Open => {}
@@ -225,30 +226,15 @@ impl eframe::App for App {
         }
 
         egui::Panel::top("top")
-            .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin {
-                left: 24,
-                right: 24,
-                top: 16,
-                bottom: 8,
-            }))
+            .frame(egui::Frame::new().inner_margin(egui::Margin { left: 24, right: 24, top: 16, bottom: 8 }))
             .show(ui, |ui| self.top_bar(ui));
 
         egui::Panel::bottom("footer")
-            .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin {
-                left: 24,
-                right: 24,
-                top: 6,
-                bottom: 12,
-            }))
+            .frame(egui::Frame::new().inner_margin(egui::Margin { left: 24, right: 24, top: 6, bottom: 12 }))
             .show(ui, |ui| self.footer(ui));
 
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().fill(theme::BG).inner_margin(egui::Margin {
-                left: 24,
-                right: 24,
-                top: 8,
-                bottom: 8,
-            }))
+            .frame(egui::Frame::new().inner_margin(egui::Margin { left: 24, right: 24, top: 8, bottom: 8 }))
             .show(ui, |ui| self.dashboard(ui));
 
         self.settings_window(&ctx);
@@ -532,7 +518,7 @@ fn hero(ui: &mut Ui, s: &State, copy: &mut Option<String>) {
                         ui.label(
                             RichText::new(ip.to_string()).font(FontId::monospace(40.0)).color(Color32::WHITE),
                         );
-                        if ui.button("📋").on_hover_text("Copy to clipboard").clicked() {
+                        if ui.button("Copy").on_hover_text("Copy to clipboard").clicked() {
                             *copy = Some(ip.to_string());
                         }
                     }
@@ -640,7 +626,7 @@ fn stats_row(ui: &mut Ui, s: &State) {
 
 fn signals_card(ui: &mut Ui, intel: Option<&IpIntel>, have_ip: bool) {
     card(ui, |ui| {
-        section_title(ui, "🛡", "Anonymity & threat signals");
+        section_title(ui, "Anonymity & threat signals");
         ui.add_space(8.0);
         let get = |f: fn(&IpIntel) -> Option<bool>| intel.and_then(f);
         egui::Grid::new("signals").num_columns(2).spacing([12.0, 9.0]).striped(false).show(ui, |ui| {
@@ -681,7 +667,7 @@ fn signals_card(ui: &mut Ui, intel: Option<&IpIntel>, have_ip: bool) {
 
 fn details_card(ui: &mut Ui, intel: Option<&IpIntel>) {
     card(ui, |ui| {
-        section_title(ui, "🌐", "Network details");
+        section_title(ui, "Network details");
         ui.add_space(8.0);
         let i = intel.cloned().unwrap_or_default();
         let coords = match (i.latitude, i.longitude) {
@@ -710,12 +696,12 @@ fn history_card(
 ) {
     card(ui, |ui| {
         ui.horizontal(|ui| {
-            section_title(ui, "🕘", "Change history");
+            section_title(ui, "Change history");
             ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.small_button("🗑").on_hover_text("Clear history").clicked() {
+                if ui.small_button("Clear").on_hover_text("Clear history").clicked() {
                     *ask_clear = true;
                 }
-                if ui.small_button("📁").on_hover_text("Open log folder").clicked() {
+                if ui.small_button("Open folder").on_hover_text("Open log folder").clicked() {
                     *open_folder = true;
                 }
             });

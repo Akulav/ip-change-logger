@@ -6,6 +6,12 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-11-12
+
+### Changed
+- **New look**, in the style of Akulav's Hyve and Lumen: a deep blue-black background with soft glows, the sidebar as a floating glass panel with the app name at the top, glass cards, the current page highlighted with a gradient, softer translucent buttons and a clear accent ring around the focused text field.
+- Section headings and the copy / open folder / clear buttons use a vector accent and plain text instead of colour emoji.
+
 ## [3.1.0] - 2026-11-12
 
 ### Added
