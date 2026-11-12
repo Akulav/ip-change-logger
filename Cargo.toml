@@ -1,6 +1,6 @@
 [package]
 name = "iptrail"
-version = "3.2.0"
+version = "3.2.1"
 edition = "2021"
 rust-version = "1.95"
 description = "Watch your public IP address, log every change, and see who the internet thinks you are. No API keys."

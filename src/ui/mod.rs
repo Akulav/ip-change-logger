@@ -21,6 +21,8 @@ use widgets::{
 
 pub const APP_NAME: &str = "IPTrail";
 const REPO_URL: &str = "https://github.com/Akulav/ip-change-logger";
+/// Content width of the Settings window (the window adds its 20 px margin on each side).
+const SETTINGS_WIDTH: f32 = 420.0;
 
 pub fn run(paths: Paths, settings: Settings, startup: crate::install::StartupInfo) -> eframe::Result {
     let icon =
@@ -382,9 +384,11 @@ impl App {
             .open(&mut open)
             .collapsible(false)
             .resizable(false)
-            .default_width(460.0)
             .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .show(ctx, |ui| {
+                // An auto-sized window gives its content last frame's width, so anything sized from
+                // `available_width()` feeds back and widens the window a little every frame. Pin it.
+                ui.set_width(SETTINGS_WIDTH);
                 let st = &mut self.settings;
 
                 caption(ui, "Monitoring");
@@ -421,23 +425,27 @@ impl App {
 
                 ui.add_space(10.0);
                 caption(ui, "Change log file");
+                // Right to left: the button takes what it needs and the field fills exactly what is
+                // left of the fixed width, so this row can't widen the window.
                 ui.horizontal(|ui| {
-                    let hint = self.paths.default_log.display().to_string();
-                    let resp = ui.add(
-                        egui::TextEdit::singleline(&mut self.log_path_edit)
-                            .hint_text(hint)
-                            .desired_width(ui.available_width() - 70.0),
-                    );
-                    if resp.lost_focus() {
-                        let trimmed = self.log_path_edit.trim();
-                        st.log_path = (!trimmed.is_empty()).then(|| trimmed.into());
-                        changed = true;
-                    }
-                    if ui.button("Reset").clicked() {
-                        self.log_path_edit.clear();
-                        st.log_path = None;
-                        changed = true;
-                    }
+                    ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+                        if ui.button("Reset").clicked() {
+                            self.log_path_edit.clear();
+                            st.log_path = None;
+                            changed = true;
+                        }
+                        let hint = self.paths.default_log.display().to_string();
+                        let resp = ui.add(
+                            egui::TextEdit::singleline(&mut self.log_path_edit)
+                                .hint_text(hint)
+                                .desired_width(ui.available_width()),
+                        );
+                        if resp.lost_focus() {
+                            let trimmed = self.log_path_edit.trim();
+                            st.log_path = (!trimmed.is_empty()).then(|| trimmed.into());
+                            changed = true;
+                        }
+                    });
                 });
 
                 ui.add_space(10.0);

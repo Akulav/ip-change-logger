@@ -6,6 +6,13 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-11-13
+
+### Fixed
+- **Settings no longer creeps wider while it is open.** The log-file row sized itself from the window's own width,
+  so the window grew a pixel or so every frame (every hover, every second) and slid sideways to stay centred. It
+  now has a fixed width.
+
 ## [3.2.0] - 2026-11-12
 
 ### Changed
